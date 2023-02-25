@@ -83,7 +83,7 @@ import-bookmarks() {
                 )
 
                 DELETE FROM moz_bookmarks
-                WHERE id=(select id FROM generation WHERE generation_number > 0)
+                WHERE id IN (SELECT id FROM generation WHERE generation_number > 0)
 EOF
   sqlite3 $PLACES_FILE ".read $SYNC_FILE"
 }
