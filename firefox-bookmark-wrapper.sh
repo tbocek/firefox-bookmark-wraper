@@ -167,7 +167,11 @@ if sqlite3 $PLACES_FILE "BEGIN IMMEDIATE" >> /dev/null 2>&1; then
   import-bookmarks
 fi
 
-firefox "$args"
+if [ -z ${args+x} ]; then
+  firefox
+else
+  firefox "${args}"
+fi
 
 if [ -f $SYNC_FILE ]; then
   HASH_AFTER=$(sha256sum "$SYNC_FILE")
