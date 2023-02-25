@@ -28,3 +28,12 @@ Available options:
 -p, --places-file     Location of the places.sqlite file, somewhere in ~/.mozilla/firefox/*.default-release/places.sqlite
 -s, --sync-file       Location of the sync file, default is ~/Config/bookmarks.sql
 ```
+
+## Installation
+
+You can copy to a directory in one of your PATHs and make it executable:
+
+```
+sudo cp firefox-bookmark-wrapper.sh /usr/local/sbin/
+sudo chmod a+x /usr/local/sbin/firefox-bookmark-wrapper.sh
+```
