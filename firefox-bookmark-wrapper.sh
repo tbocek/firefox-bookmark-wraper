@@ -70,14 +70,28 @@ parse_params() {
 
 # import the bookmarks from firefox via sqlite3
 import-bookmarks() {
+  # first delete all existing user-bookmarks, otherwise we can never delete anything
+  sqlite3 $PLACES_FILE <<EOF
+                WITH RECURSIVE generation AS (
+                    SELECT id, parent, 0 AS generation_number
+                    FROM moz_bookmarks
+                    WHERE id = 3
+                UNION ALL
+                    SELECT child.id, child.parent, generation_number+1 AS generation_number
+                    FROM moz_bookmarks child
+                    JOIN generation g ON g.id = child.parent
+                )
+
+                DELETE FROM moz_bookmarks
+                WHERE id=(select id FROM generation WHERE generation_number > 0)
+EOF
   sqlite3 $PLACES_FILE ".read $SYNC_FILE"
 }
 
 # export the bookmarks from firefox via sqlite3
 export-bookmarks() {
 
-  # this is a recursive SQL, id=3 means this is the root, and 3 + the higher numbers are bookmarks
-  # from users
+  # this is a recursive SQL, id=3 means this is the toolbar, where bookmarks from users are shown
   # https://learnsql.com/blog/query-parent-child-tree/
   IDS=$(
     sqlite3 $PLACES_FILE <<EOF
@@ -143,7 +157,8 @@ EOF
   echo "${DUMP}" | grep "${GREP::-2}" >> "$TMP"
 
   #we have a conflict, merge. Append the SQL commands, that means, entries are merged if the id is different
-  #otherwise, the one from the SQL file wins
+  #otherwise, the one from the SQL file wins. Since we have no tombstones you may see removed bookmarks
+  #appearing again (I can live with that)
   if [ "$HASH_AFTER" != "$HASH_BEFORE" ]; then
     cat $SYNC_FILE >> "$TMP"
   fi
