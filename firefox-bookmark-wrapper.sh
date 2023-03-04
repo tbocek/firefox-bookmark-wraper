@@ -11,12 +11,13 @@ cleanup() {
 
 usage() {
   cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-p] [-s]
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-p] [-s] [-i]
 Run Firefox and sync bookmarks outside of Firefox
 Available options:
 -h, --help            Print this help and exit
 -p, --places-file     Location of the places.sqlite file, somewhere in ~/.mozilla/firefox/*.default-release/places.sqlite
 -s, --sync-file       Location of the sync file, default is ~/Config/bookmarks.sql
+-i, --init            Initial import, does not delete the current bookmarks
 
 EOF
   exit
@@ -45,6 +46,7 @@ parse_params() {
   # default values of variables set from params
   PLACES_FILE=~/.mozilla/firefox/*.default-release/places.sqlite
   SYNC_FILE=~/Config/bookmarks.sql
+  NO_INIT=true
 
   while :; do
     case "${1-}" in
@@ -58,6 +60,7 @@ parse_params() {
       SYNC_FILE="${2-}"
       shift
       ;;
+    -i | --init) NO_INIT=false ;;
     -?*) die "Unknown option: $1" ;;
     *) break ;;
     esac
@@ -71,7 +74,8 @@ parse_params() {
 # import the bookmarks from firefox via sqlite3
 import-bookmarks() {
   # first delete all existing user-bookmarks, otherwise we can never delete anything
-  sqlite3 $PLACES_FILE <<EOF
+  if $NO_INIT; then
+    sqlite3 $PLACES_FILE <<EOF
                 WITH RECURSIVE generation AS (
                     SELECT id, parent, 0 AS generation_number
                     FROM moz_bookmarks
@@ -85,6 +89,7 @@ import-bookmarks() {
                 DELETE FROM moz_bookmarks
                 WHERE id IN (SELECT id FROM generation WHERE generation_number > 0)
 EOF
+  fi
   sqlite3 $PLACES_FILE ".read $SYNC_FILE"
 }
 
